@@ -39,12 +39,13 @@ fn check_permutations(input: &Vec<u32>, size: usize) -> Vec<Vec<&u32>> {
 fn main() {
     let mut now = SystemTime::now();
     let s_size: usize = 3;
-    let mut i: u32 = 15;
+    let mut i: u32 = 9;
 
 
     loop {
         let mut result: Vec<Vec<&u32>> = Vec::new();
-        let test = (1..i + 1).combinations(9).collect_vec();
+        let mut test = (1..i).combinations(8).collect_vec();
+        test.iter_mut().for_each(|x| x.push(i));
         test
             .par_iter()
             .map(|sq| check_permutations(sq, s_size))
