@@ -37,31 +37,37 @@ fn check_permutations(input: &Vec<u32>, size: usize) -> Vec<Vec<&u32>> {
 
 
 fn main() {
-    let now = SystemTime::now();
+    let mut now = SystemTime::now();
     let s_size: usize = 3;
-    let i: u32 = 17;
-    let mut result: Vec<Vec<&u32>> = Vec::new();
+    let mut i: u32 = 15;
 
-    let test = (1..i + 1).combinations(9).collect_vec();
-    test
-        .par_iter()
-        .map(|sq| check_permutations(sq, s_size))
-        .collect::<Vec<Vec<_>>>()
-        .iter()
-        .for_each(|a| result.extend_from_slice(a));
 
-    match now.elapsed() {
-        Ok(elapsed) => {
-            println!("{}", elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9);
-            println!("{}", result.len());
-        }
-        Err(e) => {
-            println!("Error: {:?}", e);
+    loop {
+        let mut result: Vec<Vec<&u32>> = Vec::new();
+        let test = (1..i + 1).combinations(9).collect_vec();
+        test
+            .par_iter()
+            .map(|sq| check_permutations(sq, s_size))
+            .collect::<Vec<Vec<_>>>()
+            .iter()
+            .for_each(|a| result.extend_from_slice(a));
+
+        match now.elapsed() {
+            Ok(elapsed) => {
+                println!("{}", i);
+                println!("{}", elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9);
+                println!("{}", result.len());
+                now = SystemTime::now();
+                i += 1
+            }
+            Err(e) => {
+                println!("Error: {:?}", e);
+            }
         }
     }
-    println!("{:?}", result);
-    let mut input = String::new();
+
+    /*let mut input = String::new();
     std::io::stdin().read_line(&mut input)
         .ok()
-        .expect("Couldn't read line");
+        .expect("Couldn't read line");*/
 }
