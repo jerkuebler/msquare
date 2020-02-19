@@ -2,9 +2,9 @@ use rayon::prelude::*;
 use itertools::Itertools;
 use std::time::SystemTime;
 
-fn check_square(input: &Vec<u32>, size: usize) -> bool {
+fn check_square(input: &Vec<&u32>, size: usize) -> bool {
     let squared: Vec<u32> = input.iter()
-        .map(|&i| i*1)
+        .map(|i| **i*1)
         .collect();
 
     let diag1: u32 = squared[0..size.pow(2)].iter().step_by(size + 1).sum();
@@ -25,26 +25,30 @@ fn check_square(input: &Vec<u32>, size: usize) -> bool {
     return true;
 }
 
+fn check_permutations(input: &Vec<u32>, size: usize) -> Vec<Vec<&u32>> {
+    let mut partial = Vec::new();
+    for square in input.iter().permutations(9) {
+        if check_square(&square, size) {
+            partial.push(square);
+        }
+    }
+    return partial;
+}
 
 
 fn main() {
     let now = SystemTime::now();
     let s_size: usize = 3;
-    let i: u32 = 13;
-    let mut result:std::vec::Vec<_> = Vec::new();
+    let i: u32 = 17;
+    let mut result: Vec<Vec<&u32>> = Vec::new();
 
-    let test = (1..i + 1).permutations(9);
-    for chunk in test.chunks(100000).into_iter(){
-        result.extend(
-            chunk
-                .collect_vec()
-                .par_iter()
-                .filter(|sq| check_square(sq, s_size))
-                .collect::<Vec<_>>()
-                .into_iter()
-                .cloned()
-        );
-    }
+    let test = (1..i + 1).combinations(9).collect_vec();
+    test
+        .par_iter()
+        .map(|sq| check_permutations(sq, s_size))
+        .collect::<Vec<Vec<_>>>()
+        .iter()
+        .for_each(|a| result.extend_from_slice(a));
 
     match now.elapsed() {
         Ok(elapsed) => {
