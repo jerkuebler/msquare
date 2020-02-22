@@ -54,12 +54,13 @@ fn main() {
     let now = SystemTime::now();
     let mut result: Vec<Vec<&u32>> = Vec::new();
 
-    let test = (1..i as u32 + 1).map(|j| j*j)
+    let test = (1..i + 1)
+        .map(|j| j*j)
         .combinations(9)
         .collect_vec();
     test
         .par_iter()
-        .map(|sq| check_permutations(sq, s_size as usize))
+        .map(|sq| check_permutations(sq, s_size))
         .collect::<Vec<Vec<_>>>()
         .iter()
         .for_each(|a| result.extend_from_slice(a));
