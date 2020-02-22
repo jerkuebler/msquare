@@ -36,30 +36,57 @@ fn check_permutations(input: &Vec<u32>, size: usize) -> Vec<Vec<&u32>> {
 }
 
 
+    let mut wtr = csv::Writer::from_path(loc)
+        .expect("Couldn't start writer");
+    for square in input {
+        let record = square
+            .iter()
+            .map(|value| value.to_string())
+            .collect::<Vec<String>>();
+        wtr.write_record(record).expect("Couldn't write record");
+    }
+    wtr.flush().expect("Couldn't flush");
+}
+
+fn square_finder(max_val: u32, side: usize) -> Vec<Vec<u32>> {
+    let mut squares: Vec<Vec<u32>> = Vec::new();
+
+    let test = (1..max_val + 1)
+        .map(|j| j)
+        .combinations(9)
+        .collect_vec();
+    test
+        .par_iter()
+        .map(|sq| check_permutations(sq, side))
+        .collect::<Vec<Vec<_>>>()
+        .iter()
+        .for_each(|a| squares.extend_from_slice(&a[..]));
+
+    return squares;
+}
+
+
 fn main() {
-    let mut now = SystemTime::now();
-    let s_size: usize = 3;
-    let mut i: u32 = 9;
+    let args: Vec<String> = env::args().collect();
+    let s_size: usize = args[1].parse::<usize>().expect("First arg not a valid side size");
+    let i: u32 = args[2].parse::<u32>().expect("Second arg not a valid max value");
+    println!("Side Size: {} \nMax Value: {}", s_size, i);
+
 
 
     loop {
-        let mut result: Vec<Vec<&u32>> = Vec::new();
-        let mut test = (1..i).combinations(8).collect_vec();
-        test.iter_mut().for_each(|x| x.push(i));
-        test
-            .par_iter()
-            .map(|sq| check_permutations(sq, s_size))
-            .collect::<Vec<Vec<_>>>()
-            .iter()
-            .for_each(|a| result.extend_from_slice(a));
+        let now = SystemTime::now();
+        let result: Vec<Vec<u32>> = square_finder(i, s_size);
 
         match now.elapsed() {
             Ok(elapsed) => {
-                println!("{}", i);
-                println!("{}", elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9);
-                println!("{}", result.len());
-                now = SystemTime::now();
-                i += 1
+                let run = elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9;
+                println!("Run Time: {}", run);
+                println!("Magic Squares Found: {}", result.len());
+                if result.len() > 1 {
+                    let str: String = format!("ssize{}maxv{}run{:.1}.csv", s_size, i, run);
+                    log_to_csv(result, str)
+                }
             }
             Err(e) => {
                 println!("Error: {:?}", e);
