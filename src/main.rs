@@ -49,7 +49,7 @@ fn main() {
     println!("{:?}", args);
     let s_size: usize = args[1].parse::<usize>().expect("First arg not a valid side size");
     let i: u32 = args[2].parse::<u32>().expect("Second arg not a valid max value");
-    println!("Side Size: {} \nMax Value: {} \nStart Time Estimate: {}", s_size, i, SystemTime::now());
+    println!("Side Size: {} \nMax Value: {}", s_size, i);
 
     let now = SystemTime::now();
     let mut result: Vec<Vec<&u32>> = Vec::new();
