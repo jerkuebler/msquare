@@ -4,20 +4,27 @@ use std::time::SystemTime;
 use std::env;
 
 fn check_square(input: &Vec<&u32>, size: usize) -> bool {
-    let squared: Vec<u32> = input.iter()
-        .map(|i| **i*1)
-        .collect();
 
-    let diag1: u32 = squared[0..size.pow(2)].iter().step_by(size + 1).sum();
-    let diag2: u32 = squared[size-1..(size.pow(2) - 1)].iter().step_by(size - 1).sum();
+    let diag1: u32 = input[0..size.pow(2)].iter()
+        .step_by(size + 1)
+        .fold(0, |sum, x| sum + **x);
+
+    let diag2: u32 = input[size-1..(size.pow(2) - 1)].iter()
+        .step_by(size - 1)
+        .fold(0, |sum, x| sum + **x);
 
     if diag1 != diag2{
         return false;
     }
 
     for i in 0..size {
-        let horz: u32 = squared[i * size .. size * (i + 1)].iter().sum();
-        let ver: u32 = squared[i..size.pow(2)].iter().step_by(size).sum();
+        let horz: u32 = input[i * size .. size * (i + 1)].iter()
+            .fold(0, |sum, x| sum + **x);
+
+        let ver: u32 = input[i..size.pow(2)].iter()
+            .step_by(size)
+            .fold(0, |sum, x| sum + **x);
+
         if horz != ver || horz != diag1 {
             return false;
         }
@@ -67,24 +74,39 @@ fn square_finder(max_val: u32, side: usize) -> Vec<Vec<u32>> {
     return squares;
 }
 
+struct Config {
+    size: usize,
+    csv: bool,
+}
+
+fn parse_args(args: &[String]) -> Config {
+
+    let size: usize = args[1].parse::<usize>().expect("First arg not a valid side size");
+    let mut csv: bool = false;
+    if args.len() > 2 {
+        csv = args[2].parse::<bool>().expect("Couldn't determine bool");
+    }
+    return Config {size, csv}
+}
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    let s_size: usize = args[1].parse::<usize>().expect("First arg not a valid side size");
-    let mut i: u32 = args[2].parse::<u32>().expect("Second arg not a valid max value");
-    println!("Side Size: {} \nMax Value: {}", s_size, i);
+    let config: Config = parse_args(&args);
+    let mut i: u32 = config.size as u32 * config.size as u32;
+    println!("Side Size: {}", config.size);
 
     loop {
+        println!("Max Value: {}", i);
         let now = SystemTime::now();
-        let result: Vec<Vec<u32>> = square_finder(i, s_size);
+        let result: Vec<Vec<u32>> = square_finder(i, config.size);
 
         match now.elapsed() {
             Ok(elapsed) => {
                 let run = elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9;
                 println!("Run Time: {}", run);
                 println!("Magic Squares Found: {}", result.len());
-                if result.len() > 1 {
-                    let str: String = format!("ssize{}maxv{}run{:.1}.csv", s_size, i, run);
+                if result.len() > 1 && config.csv {
+                    let str: String = format!("ssize{}maxv{}run{:.1}.csv", config.size, i, run);
                     log_to_csv(result, str)
                 }
                 i += 1;
