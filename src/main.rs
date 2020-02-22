@@ -1,6 +1,7 @@
 use rayon::prelude::*;
 use itertools::Itertools;
 use std::time::SystemTime;
+use std::env;
 
 fn check_square(input: &Vec<&u32>, size: usize) -> bool {
     let squared: Vec<u32> = input.iter()
@@ -25,16 +26,17 @@ fn check_square(input: &Vec<&u32>, size: usize) -> bool {
     return true;
 }
 
-fn check_permutations(input: &Vec<u32>, size: usize) -> Vec<Vec<&u32>> {
-    let mut partial = Vec::new();
+fn check_permutations(input: &Vec<u32>, size: usize) -> Vec<Vec<u32>> {
+    let mut partial: Vec<Vec<u32>> = Vec::new();
     for square in input.iter().permutations(9) {
         if check_square(&square, size) {
-            partial.push(square);
+            partial.push(square.iter().cloned().cloned().collect());
         }
     }
     return partial;
 }
 
+fn log_to_csv(input: Vec<Vec<u32>>, loc: String) {
 
     let mut wtr = csv::Writer::from_path(loc)
         .expect("Couldn't start writer");
@@ -69,10 +71,8 @@ fn square_finder(max_val: u32, side: usize) -> Vec<Vec<u32>> {
 fn main() {
     let args: Vec<String> = env::args().collect();
     let s_size: usize = args[1].parse::<usize>().expect("First arg not a valid side size");
-    let i: u32 = args[2].parse::<u32>().expect("Second arg not a valid max value");
+    let mut i: u32 = args[2].parse::<u32>().expect("Second arg not a valid max value");
     println!("Side Size: {} \nMax Value: {}", s_size, i);
-
-
 
     loop {
         let now = SystemTime::now();
@@ -87,6 +87,7 @@ fn main() {
                     let str: String = format!("ssize{}maxv{}run{:.1}.csv", s_size, i, run);
                     log_to_csv(result, str)
                 }
+                i += 1;
             }
             Err(e) => {
                 println!("Error: {:?}", e);
