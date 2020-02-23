@@ -1,6 +1,7 @@
 use rayon::prelude::*;
 use itertools::Itertools;
 use std::time::SystemTime;
+use std::env;
 
 fn check_square(input: &Vec<&u32>, size: usize) -> bool {
 
@@ -44,33 +45,33 @@ fn check_permutations(input: &Vec<u32>, size: usize) -> Vec<Vec<&u32>> {
 
 
 fn main() {
+    let args: Vec<String> = env::args().collect();
+    println!("{:?}", args);
+    let s_size: usize = args[1].parse::<usize>().expect("First arg not a valid side size");
+    let i: u32 = args[2].parse::<u32>().expect("Second arg not a valid max value");
+    println!("Side Size: {} \nMax Value: {} \nStart Time Estimate: {}", s_size, i, SystemTime::now());
+
     let now = SystemTime::now();
-    let s_size: usize = 3;
-    let i: u32 = 13;
     let mut result: Vec<Vec<&u32>> = Vec::new();
 
-    let test = (1..i + 1).map(|j| j*j)
+    let test = (1..i as u32 + 1).map(|j| j*j)
         .combinations(9)
         .collect_vec();
     test
         .par_iter()
-        .map(|sq| check_permutations(sq, s_size))
+        .map(|sq| check_permutations(sq, s_size as usize))
         .collect::<Vec<Vec<_>>>()
         .iter()
         .for_each(|a| result.extend_from_slice(a));
 
     match now.elapsed() {
         Ok(elapsed) => {
-            println!("{}", elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9);
-            println!("{}", result.len());
+            println!("Run Time: {}", elapsed.as_secs() as f64 + elapsed.subsec_nanos() as f64 * 1e-9);
+            println!("Magic Squares Found: {}", result.len());
+            println!("Magic Squares: {:?}", result);
         }
         Err(e) => {
             println!("Error: {:?}", e);
         }
     }
-    println!("{:?}", result);
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input)
-        .ok()
-        .expect("Couldn't read line");
 }
