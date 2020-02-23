@@ -60,7 +60,7 @@ fn log_to_csv(input: Vec<Vec<u32>>, loc: String) {
     wtr.flush().expect("Couldn't flush");
 }
 
-fn search_msquare_iterative(max_val: u32, side: usize) -> Vec<Vec<u32>> {
+fn search_m_square_iterative(max_val: u32, side: usize) -> Vec<Vec<u32>> {
     let mut squares: Vec<Vec<u32>> = Vec::new();
 
     let test = (1..max_val)
@@ -78,7 +78,7 @@ fn search_msquare_iterative(max_val: u32, side: usize) -> Vec<Vec<u32>> {
     return squares;
 }
 
-fn search_msquare(max_val: u32, side: usize) -> Vec<Vec<u32>> {
+fn search_m_square(max_val: u32, side: usize) -> Vec<Vec<u32>> {
     let mut squares: Vec<Vec<u32>> = Vec::new();
 
     let test = (1..max_val + 1)
@@ -104,15 +104,15 @@ fn run(config: Config) {
     if config.iterative {
         break_loop = false;
         i = config.size.pow(2) as u32;
-        search_func = search_msquare_iterative;
+        search_func = search_m_square_iterative;
     } else if config.max == 0 {
         break_loop = false;
         i = config.size.pow(2) as u32;
-        search_func = search_msquare;
+        search_func = search_m_square;
     } else {
         break_loop = true;
         i = config.max;
-        search_func = search_msquare;
+        search_func = search_m_square;
     }
 
     let cumulative = SystemTime::now();
