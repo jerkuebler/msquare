@@ -3,20 +3,27 @@ use itertools::Itertools;
 use std::time::SystemTime;
 
 fn check_square(input: &Vec<&u32>, size: usize) -> bool {
-    let squared: Vec<u32> = input.iter()
-        .map(|i| **i*1)
-        .collect();
 
-    let diag1: u32 = squared[0..size.pow(2)].iter().step_by(size + 1).sum();
-    let diag2: u32 = squared[size-1..(size.pow(2) - 1)].iter().step_by(size - 1).sum();
+    let diag1: u32 = input[0..size.pow(2)].iter()
+        .step_by(size + 1)
+        .fold(0, |sum, x| sum + **x);
+
+    let diag2: u32 = input[size-1..(size.pow(2) - 1)].iter()
+        .step_by(size - 1)
+        .fold(0, |sum, x| sum + **x);
 
     if diag1 != diag2{
         return false;
     }
 
     for i in 0..size {
-        let horz: u32 = squared[i * size .. size * (i + 1)].iter().sum();
-        let ver: u32 = squared[i..size.pow(2)].iter().step_by(size).sum();
+        let horz: u32 = input[i * size .. size * (i + 1)].iter()
+            .fold(0, |sum, x| sum + **x);
+
+        let ver: u32 = input[i..size.pow(2)].iter()
+            .step_by(size)
+            .fold(0, |sum, x| sum + **x);
+
         if horz != ver || horz != diag1 {
             return false;
         }
@@ -39,10 +46,12 @@ fn check_permutations(input: &Vec<u32>, size: usize) -> Vec<Vec<&u32>> {
 fn main() {
     let now = SystemTime::now();
     let s_size: usize = 3;
-    let i: u32 = 17;
+    let i: u32 = 13;
     let mut result: Vec<Vec<&u32>> = Vec::new();
 
-    let test = (1..i + 1).combinations(9).collect_vec();
+    let test = (1..i + 1).map(|j| j*j)
+        .combinations(9)
+        .collect_vec();
     test
         .par_iter()
         .map(|sq| check_permutations(sq, s_size))
