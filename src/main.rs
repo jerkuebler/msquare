@@ -36,11 +36,11 @@ fn check_square(input: &Vec<&u32>, size: usize) -> bool {
     return true;
 }
 
-fn check_permutations(input: &Vec<u32>, size: usize) -> Vec<Vec<u32>> {
-    let mut partial:Vec<Vec<u32>> = Vec::new();
+fn check_permutations(input: &Vec<u32>, size: usize) -> Vec<Vec<&u32>> {
+    let mut partial:Vec<Vec<&u32>> = Vec::new();
     for square in input.iter().permutations(9) {
         if check_square(&square, size) {
-            partial.push(square.iter().cloned().cloned().collect());
+            partial.push(square);
         }
     }
     return partial;
@@ -60,15 +60,10 @@ fn log_to_csv(input: Vec<Vec<u32>>, loc: String) {
     wtr.flush().expect("Couldn't flush");
 }
 
-fn search_m_square_iterative(max_val: u32, side: usize) -> Vec<Vec<u32>> {
-    let mut squares: Vec<Vec<u32>> = Vec::new();
+fn split_combos(combos: &[Vec<u32>], side: usize) -> Vec<Vec<&u32>> {
+    let mut squares: Vec<Vec<&u32>> = Vec::new();
 
-    let test = (1..max_val)
-        .map(|j| j)
-        .combinations(8)
-        .map(|combo| combo.iter().chain(&[max_val]).cloned().collect::<Vec<u32>>())
-        .collect::<Vec<Vec<u32>>>();
-    test
+    combos
         .par_iter()
         .map(|sq| check_permutations(sq, side))
         .collect::<Vec<Vec<_>>>()
@@ -78,41 +73,47 @@ fn search_m_square_iterative(max_val: u32, side: usize) -> Vec<Vec<u32>> {
     return squares;
 }
 
+fn search_m_square_iterative(max_val: u32, side: usize) -> Vec<Vec<u32>> {
+
+    let test = (1..max_val)
+        .map(|j| j)
+        .combinations(side.pow(2) - 1)
+        .map(|combo| combo.iter().chain(&[max_val]).cloned().collect::<Vec<u32>>())
+        .collect::<Vec<Vec<u32>>>();
+
+    let result = split_combos(&test, side);
+
+    return result
+        .iter()
+        .cloned()
+        .map(|combo| combo.iter().map(|j| **j).collect::<Vec<u32>>())
+        .collect::<Vec<Vec<u32>>>();
+}
+
 fn search_m_square(max_val: u32, side: usize) -> Vec<Vec<u32>> {
-    let mut squares: Vec<Vec<u32>> = Vec::new();
 
     let test = (1..max_val + 1)
         .map(|j| j)
-        .combinations(9)
+        .combinations(side.pow(2))
         .collect_vec();
-    test
-        .par_iter()
-        .map(|sq| check_permutations(sq, side))
-        .collect::<Vec<Vec<_>>>()
-        .iter()
-        .for_each(|a| squares.extend_from_slice(&a[..]));
 
-    return squares;
+    let result = split_combos(&test, side);
+
+    return result
+        .iter()
+        .cloned()
+        .map(|combo| combo.iter().map(|j| **j).collect::<Vec<u32>>())
+        .collect::<Vec<Vec<u32>>>();
 }
 
 fn run(config: Config) {
     println!("Side Size: {} | Note: Press Ctrl+C to stop in climb or iterative mode", config.size);
-    let break_loop: bool;
     let mut i: u32;
-    let search_func: fn(u32, usize) -> Vec<Vec<u32>>;
 
-    if config.iterative {
-        break_loop = false;
+    if config.max < config.size.pow(2) as u32 {
         i = config.size.pow(2) as u32;
-        search_func = search_m_square_iterative;
-    } else if config.max == 0 {
-        break_loop = false;
-        i = config.size.pow(2) as u32;
-        search_func = search_m_square;
     } else {
-        break_loop = true;
-        i = config.max;
-        search_func = search_m_square;
+        i = config.max
     }
 
     let cumulative = SystemTime::now();
@@ -121,7 +122,7 @@ fn run(config: Config) {
     loop {
         let now = SystemTime::now();
 
-        let result: Vec<Vec<u32>> = search_func(i, config.size);
+        let result: Vec<Vec<u32>> = (config.search_func)(i, config.size);
 
         let run = now.elapsed().expect("Couldn't get run time due to system clock error");
         let run_time = run.as_secs() as f64 + run.subsec_nanos() as f64 *1e-9;
@@ -146,7 +147,7 @@ fn run(config: Config) {
             let str: String = format!("ssize{}maxv{}run{:.1}.csv", config.size, i, run_time);
             log_to_csv(result, str)
         }
-        if break_loop {
+        if config.break_loop {
             break
         } else {
             i += 1;
@@ -159,6 +160,8 @@ struct Config {
     csv: bool,
     max: u32,
     iterative: bool,
+    break_loop: bool,
+    search_func: fn(u32, usize) -> Vec<Vec<u32>>,
 }
 
 fn parse_args(args: ArgMatches) -> Config {
@@ -179,7 +182,21 @@ fn parse_args(args: ArgMatches) -> Config {
 
     let iterative: bool = args.is_present("iterative");
 
-    return Config {size, csv, max, iterative}
+    let break_loop: bool;
+    let search_func: fn(u32, usize) -> Vec<Vec<u32>>;
+
+    if iterative {
+        break_loop = false;
+        search_func = search_m_square_iterative;
+    } else if max == 0 {
+        break_loop = false;
+        search_func = search_m_square;
+    } else {
+        break_loop = true;
+        search_func = search_m_square;
+    }
+
+    return Config {size, csv, max, iterative, break_loop, search_func}
 }
 
 fn main() {
