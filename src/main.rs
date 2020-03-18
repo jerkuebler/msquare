@@ -1,10 +1,8 @@
 use rayon::prelude::*;
 use itertools::Itertools;
 use std::time::SystemTime;
+use std::fs::File;
 use clap::{App, Arg, ArgMatches};
-
-extern crate csv;
-extern crate clap;
 
 fn check_square(input: &Vec<&u32>, size: usize) -> bool {
 
@@ -46,17 +44,19 @@ fn check_permutations(input: &Vec<u32>, size: usize) -> Vec<Vec<&u32>> {
     return partial;
 }
 
-fn log_to_csv(input: Vec<Vec<u32>>, loc: String) {
+fn csv_header(wtr: &mut csv::Writer<File>){
+    let header = vec!["Iteration Max Value",
+                      "Iteration Run Time",
+                      "Iteration Magic Squares",
+                      "Total Run Time",
+                      "Total Magic Squares"];
 
-    let mut wtr = csv::Writer::from_path(loc)
-        .expect("Couldn't start writer");
-    for square in input {
-        let record = square
-            .iter()
-            .map(|value| value.to_string())
-            .collect::<Vec<String>>();
-        wtr.write_record(record).expect("Couldn't write record");
-    }
+    wtr.write_record(header).expect("Couldn't write header");
+    wtr.flush().expect("Couldn't flush header to file");
+}
+
+fn append_values(input: Vec<String>, wtr: &mut csv::Writer<File>) {
+    wtr.write_record(input).expect("Couldn't write record");
     wtr.flush().expect("Couldn't flush");
 }
 
@@ -110,6 +110,12 @@ fn run(config: Config) {
     println!("Side Size: {} | Note: Press Ctrl+C to stop in climb or iterative mode", config.size);
     let mut i: u32;
 
+    let mut wtr = csv::Writer::from_path("test.csv".to_string())
+        .expect("Couldn't start writer");
+    if config.csv {
+        csv_header(&mut wtr);
+    }
+
     if config.max < config.size.pow(2) as u32 {
         i = config.size.pow(2) as u32;
     } else {
@@ -141,12 +147,12 @@ fn run(config: Config) {
             let cu_time_str = format!("Cumulative Time: {:.3}s | ", cu_time);
             let cu_m_squares = format!("Cumulative Magic Squares: {} | ", _cumulative_m_sqr);
             report = format!("{}{}{}", report, cu_time_str, cu_m_squares);
+            if config.csv {
+                let new_row = vec![i.to_string(), run_time.to_string(), result.len().to_string(), cu_time.to_string(), _cumulative_m_sqr.to_string()];
+                append_values(new_row, &mut wtr);
+            }
         }
         println!("{}", report);
-        if result.len() > 1 && config.csv {
-            let str: String = format!("ssize{}maxv{}run{:.1}.csv", config.size, i, run_time);
-            log_to_csv(result, str)
-        }
         if config.break_loop {
             break
         } else {
@@ -206,7 +212,7 @@ fn main() {
         .about("Finds magic squares of size (size * size) using values up to max num")
         .arg(Arg::with_name("max")
             .short("m")
-            .help("Find magic squares using values up to the max. Setting to 0 will enable loop")
+            .help("Find magic squares using values up to the max. Setting to 0 will enable climb mode")
             .takes_value(true)
             .default_value("9")
         )
@@ -219,11 +225,14 @@ fn main() {
         )
         .arg(Arg::with_name("csv")
             .short("c")
-            .help("Log magic squares to CSV")
+            .help("Log results to CSV")
         )
         .arg(Arg::with_name("iterative")
             .short("i")
             .help("Increase max iteratively. Overrides max value."))
+        .arg(Arg::with_name("logging")
+            .short("l")
+            .help("Logs results to CSV"))
         .get_matches();
 
     let config = parse_args(matches);
